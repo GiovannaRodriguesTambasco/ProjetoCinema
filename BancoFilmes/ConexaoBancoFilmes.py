@@ -2,7 +2,7 @@
 Classe que facilita a conexão com o banco de dados usando SQLALchemy.
 """
 from sqlalchemy import create_engine
-
+from sqlalchemy.orm import sessionmaker, scoped_session
 class ConexaoBancoFilmes:
     """
     Classe que gerencia conexão com o banco de dados.
@@ -10,6 +10,7 @@ class ConexaoBancoFilmes:
 
     def __init__(self):
         self.conexao = None
+        self.sessao = None
         self.tipo_banco_dados = ""
         self.usuario = ""
         self.senha = ""
@@ -45,7 +46,7 @@ class ConexaoBancoFilmes:
         #Exemplo de uma string de configuração para o SQLALchemy.
         #'<tipo_banco_de_dados>://<Usuário>:<Senha>@<Endereço>:<porta>/<Database>'
 
-        string_conexao = self.tipo_banco_dados + "//"
+        string_conexao = self.tipo_banco_dados + "://"
         #Se a string de usuário não for vazia, armazenará na string o nome de usuário
         if not self.usuario == "":
             string_conexao = string_conexao + self.usuario
@@ -65,6 +66,23 @@ class ConexaoBancoFilmes:
 
     def cria_conexao(self):
         if self.tipo_banco_dados.lower() == "sqlite":
-            self.conexao = create_engine(self.__gera_string_conexao() + "?check_same_thread=false")
+            #Cria a engine de conexão do banco de dados
+            self.conexao = create_engine(self.__gera_string_conexao() + "?check_same_thread=False")
+            #Cria a sessão com o banco de dados
+            sessao = sessionmaker(bind=self.conexao)
+            self.sessao = scoped_session(sessao)
+
         else:
+            #Cria a engine de conexão do banco de dados
             self.conexao = create_engine(self.__gera_string_conexao(), pool_recicle=1, max_overflow=0)
+            # Cria a sessão com o banco de dados
+            sessao = sessionmaker(bind=self.conexao)
+            self.sessao = sessao()
+
+    @property
+    def get_sessao(self):
+        return self.sessao
+
+    @property
+    def get_conexao(self):
+        return self.conexao
